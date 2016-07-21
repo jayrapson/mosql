@@ -187,7 +187,10 @@ module MoSQL
 
     def transform_primitive(v, type=nil)
       case v
-      when BSON::ObjectId, Symbol
+      when BSON::ObjectId
+        ids = v.to_s
+        "#{ids[0,8]}-#{ids[8,4]}-#{ids[12,4]}-#{ids[16,4]}-#{ids[20,4]}00000000"
+      when Symbol
         v.to_s
       when BSON::Binary
         if type.downcase == 'uuid'
@@ -198,7 +201,12 @@ module MoSQL
       when BSON::DBRef
         v.object_id.to_s
       else
-        v
+        # deal with strings which have been saved inside arrays
+        if v && v.is_a?(String) && v.match(/^[0-9a-fA-F]{24}$/) # is a mongo object id
+          "#{v[0,8]}-#{v[8,4]}-#{v[12,4]}-#{v[16,4]}-#{v[20,4]}00000000"
+        else
+          v
+        end
       end
     end
 
